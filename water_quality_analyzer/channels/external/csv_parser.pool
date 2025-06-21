@@ -1,0 +1,41 @@
+open channel pools.logging
+
+pool parse_water_samples(csv:rivulet, file_path:rivulet):[WaterSample] {
+    pour [] into samples
+    let lines = split(csv, "\n")
+    if measure(lines) <= 1 {
+        draw from logging.warn("No data lines in file: " + file_path)
+        return samples
+    }
+    let header, *records = lines
+    let line_no = 2
+    cycle through records as rec {
+        if rec.trim() == "" { 
+            line_no = line_no + 1
+            skip this flow 
+        }
+        let fields = split(rec, ",")
+        if measure(fields) < 5 {
+            draw from logging.warn("Malformed line " + to_rivulet(line_no) + " in " + file_path)
+            line_no = line_no + 1
+            skip this flow
+        }
+        try channel {
+            let ph = to_depth(fields[2])
+            let turb = to_depth(fields[3])
+            let temp = to_depth(fields[4])
+            pour {
+                timestamp: fields[0],
+                location: fields[1],
+                ph: ph,
+                turbidity: turb,
+                temperature: temp
+            } into sample
+            samples = samples + [sample]
+        } catch turbulence as error {
+            draw from logging.warn("Invalid numeric value at line " + to_rivulet(line_no) + " in " + file_path)
+        }
+        line_no = line_no + 1
+    }
+    return samples
+}

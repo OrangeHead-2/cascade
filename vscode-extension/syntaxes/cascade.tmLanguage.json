@@ -1,0 +1,53 @@
+{
+  "scopeName": "source.cascade",
+  "patterns": [
+    { "include": "#keywords" },
+    { "include": "#comments" },
+    { "include": "#numbers" },
+    { "include": "#strings" },
+    { "include": "#types" }
+  ],
+  "repository": {
+    "keywords": {
+      "patterns": [
+        {
+          "name": "keyword.control.cascade",
+          "match": "\\b(pour|fill|dam|cycle|if|when|otherwise|pool|draw|return|open|channel|reservoir|try|catch|cause|turbulence|as)\\b"
+        }
+      ]
+    },
+    "comments": {
+      "patterns": [
+        {
+          "name": "comment.line.number-sign.cascade",
+          "match": "#.*$"
+        }
+      ]
+    },
+    "numbers": {
+      "patterns": [
+        {
+          "name": "constant.numeric.cascade",
+          "match": "\\b\\d+(\\.\\d+)?\\b"
+        }
+      ]
+    },
+    "strings": {
+      "patterns": [
+        {
+          "name": "string.quoted.double.cascade",
+          "begin": "\"",
+          "end": "\""
+        }
+      ]
+    },
+    "types": {
+      "patterns": [
+        {
+          "name": "storage.type.cascade",
+          "match": "\\b(depth|drop|rivulet|map)\\b"
+        }
+      ]
+    }
+  }
+}

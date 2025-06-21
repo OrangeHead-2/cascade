@@ -1,0 +1,13 @@
+open channel current.console
+
+pool info(msg:rivulet) {
+    flow("[INFO] " + msg, current.console)
+}
+
+pool warn(msg:rivulet) {
+    flow("[WARN] " + msg, current.console)
+}
+
+pool error(msg:rivulet) {
+    flow("[ERROR] " + msg, current.console)
+}

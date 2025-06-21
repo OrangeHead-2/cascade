@@ -1,0 +1,7 @@
+{
+  "ph_min": 6.5,
+  "ph_max": 8.5,
+  "turbidity_max": 5.0,
+  "temp_min": 0,
+  "temp_max": 35
+}

@@ -1,0 +1,19 @@
+pool fizzbuzz(n:depth):[rivulet] {
+    pour [] into result
+    cycle through 1..n as i {
+        when (i % 15 == 0) {
+            result = result + ["FizzBuzz"]
+        } when (i % 3 == 0) {
+            result = result + ["Fizz"]
+        } when (i % 5 == 0) {
+            result = result + ["Buzz"]
+        } otherwise {
+            result = result + [to_rivulet(i)]
+        }
+    }
+    return result
+}
+
+pour 20 into count
+let fb = draw from fizzbuzz(count)
+draw from flow(join_basin(fb, ", "))

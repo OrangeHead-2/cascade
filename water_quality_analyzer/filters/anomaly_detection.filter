@@ -1,0 +1,13 @@
+// thresholds: map {ph_min, ph_max, turbidity_max, temp_min, temp_max}
+pool detect(samples:[WaterSample], thresholds:map):[WaterSample] {
+    pour [] into anomalies
+    cycle through samples as s {
+        let bad_ph = s.ph < thresholds.ph_min || s.ph > thresholds.ph_max
+        let bad_turbidity = s.turbidity > thresholds.turbidity_max
+        let bad_temp = s.temperature < thresholds.temp_min || s.temperature > thresholds.temp_max
+        if bad_ph || bad_turbidity || bad_temp {
+            anomalies = anomalies + [s]
+        }
+    }
+    return anomalies
+}

@@ -1,0 +1,44 @@
+open channel current.file
+open channel delta.collections
+open channel wellspring.math
+open channel channels.external.csv_parser
+open channel pools.statistics
+open channel pools.reporting
+open channel filters.anomaly_detection
+open channel pools.logging
+
+// Configurable anomaly thresholds loaded from config file
+let config_path = "config/anomaly_thresholds.json"
+let anomaly_config = draw from current.file.read(config_path)
+let thresholds = parse_json(anomaly_config)
+
+// Support multiple input files
+let input_files = [
+    "data/water_samples_siteA.csv",
+    "data/water_samples_siteB.csv"
+]
+pour [] into all_samples
+
+cycle through input_files as file_path {
+    try channel {
+        let raw_csv = draw from current.file.read(file_path)
+        if raw_csv == "" {
+            draw from logging.warn("File is empty: " + file_path)
+            skip this flow
+        }
+        let site_samples = draw from csv_parser.parse_water_samples(raw_csv, file_path)
+        all_samples = all_samples + site_samples
+    } catch turbulence as error {
+        draw from logging.error("Failed to process " + file_path + ": " + to_rivulet(error))
+    }
+}
+
+if measure(all_samples) == 0 {
+    draw from logging.error("No samples found in any file. Exiting.")
+    exit()
+}
+
+let stats = draw from statistics.calculate_stats(all_samples)
+let anomalies = draw from anomaly_detection.detect(all_samples, thresholds)
+draw from reporting.output_report(stats, anomalies, thresholds)
+draw from reporting.write_csv_report(stats, anomalies, "output/analysis_report.csv")

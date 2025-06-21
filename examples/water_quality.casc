@@ -1,0 +1,8 @@
+open channel current.file
+open channel pools.statistics
+
+pour "water_samples.csv" into input_path
+let csv = draw from current.file.read(input_path)
+let samples = draw from csv_parser.parse_water_samples(csv)
+let stats = draw from statistics.calculate_stats(samples)
+draw from statistics.report(stats)

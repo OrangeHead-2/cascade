@@ -1,0 +1,101 @@
+open channel pools.logging
+
+pool calculate_stats(samples:[WaterSample]):map {
+    if measure(samples) == 0 {
+        draw from logging.error("No samples to analyze.")
+        return {
+            count: 0,
+            avg_ph: 0,
+            min_ph: 0,
+            max_ph: 0,
+            median_ph: 0,
+            stddev_ph: 0,
+            avg_turbidity: 0,
+            min_turbidity: 0,
+            max_turbidity: 0,
+            median_turbidity: 0,
+            stddev_turbidity: 0,
+            avg_temperature: 0,
+            min_temperature: 0,
+            max_temperature: 0,
+            median_temperature: 0,
+            stddev_temperature: 0,
+            sites: []
+        }
+    }
+    let phs = map(samples, s => s.ph)
+    let turbs = map(samples, s => s.turbidity)
+    let temps = map(samples, s => s.temperature)
+    let sites = unique(map(samples, s => s.location))
+    return {
+        count: measure(samples),
+        avg_ph: average(phs),
+        min_ph: minimum(phs),
+        max_ph: maximum(phs),
+        median_ph: median(phs),
+        stddev_ph: stddev(phs),
+        avg_turbidity: average(turbs),
+        min_turbidity: minimum(turbs),
+        max_turbidity: maximum(turbs),
+        median_turbidity: median(turbs),
+        stddev_turbidity: stddev(turbs),
+        avg_temperature: average(temps),
+        min_temperature: minimum(temps),
+        max_temperature: maximum(temps),
+        median_temperature: median(temps),
+        stddev_temperature: stddev(temps),
+        sites: sites
+    }
+}
+
+pool average(nums:[depth]):depth {
+    if measure(nums) == 0 { return 0 }
+    let sum = reduce(nums, (acc, n) => acc + n, 0)
+    return sum / to_depth(measure(nums))
+}
+
+pool minimum(nums:[depth]):depth {
+    if measure(nums) == 0 { return 0 }
+    let min = nums[0]
+    cycle through nums as n {
+        if n < min { min = n }
+    }
+    return min
+}
+
+pool maximum(nums:[depth]):depth {
+    if measure(nums) == 0 { return 0 }
+    let max = nums[0]
+    cycle through nums as n {
+        if n > max { max = n }
+    }
+    return max
+}
+
+pool median(nums:[depth]):depth {
+    let sorted = sort(nums)
+    let n = measure(sorted)
+    if n == 0 { return 0 }
+    if n % 2 == 1 {
+        return sorted[n // 2]
+    }
+    return (sorted[n // 2 - 1] + sorted[n // 2]) / 2
+}
+
+pool stddev(nums:[depth]):depth {
+    let avg = draw from average(nums)
+    let sumsq = reduce(nums, (acc, n) => acc + (n - avg) * (n - avg), 0)
+    let n = measure(nums)
+    if n <= 1 { return 0 }
+    return sqrt(sumsq / to_depth(n - 1))
+}
+
+pool unique(items:[rivulet]):[rivulet] {
+    pour [] into result
+    cycle through items as item {
+        if !result.has(item) {
+            result = result + [item]
+        }
+    }
+    return result
+}

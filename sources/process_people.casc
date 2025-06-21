@@ -1,0 +1,69 @@
+// Import needed modules from the standard library
+open channel current.file
+open channel delta.collections
+open channel delta.transform
+open channel wellspring.math
+open channel wellspring.time
+
+// Define the Person type
+reservoir Person {
+    name: rivulet,
+    age: depth,
+    active: drop
+}
+
+// Load CSV, parse into Person objects
+pool LoadPeople(path:rivulet):[Person] {
+    let raw_lines = draw from current.file.read_lines(path)
+    let header, *lines = raw_lines
+    pour [] into people
+    cycle through lines as line {
+        let fields = split(line, ",")
+        if measure(fields) >= 3 {
+            pour {
+                name: fields[0],
+                age: to_depth(fields[1]),
+                active: fields[2] == "true"
+            } into person
+            people = people + [person]
+        }
+    }
+    return people
+}
+
+// Filter for active users over 21
+pool FilterActiveAdults(people:[Person]):[Person] {
+    return filter(people, p => p.active && p.age > 21)
+}
+
+// Group by decade
+pool GroupByDecade(people:[Person]):map {
+    pour {} into groups
+    cycle through people as p {
+        let decade = (p.age // 10) * 10
+        if !groups.has(decade) {
+            groups[decade] = []
+        }
+        groups[decade] = groups[decade] + [p]
+    }
+    return groups
+}
+
+// Output summary to console
+pool PrintSummary(groups:map) {
+    flow("Summary of active adults by decade:", current.console)
+    cycle through groups.keys() as decade {
+        let group = groups[decade]
+        flow("Age " + to_rivulet(decade) + "s: " + to_rivulet(measure(group)) + " people", current.console)
+        cycle through group as person {
+            flow("  - " + person.name + " (" + to_rivulet(person.age) + ")", current.console)
+        }
+    }
+}
+
+// Main program flow
+pour "people.csv" into input_path
+let people = draw from LoadPeople(input_path)
+let adults = draw from FilterActiveAdults(people)
+let grouped = draw from GroupByDecade(adults)
+draw from PrintSummary(grouped)

@@ -1,0 +1,61 @@
+open channel current.console
+open channel current.file
+open channel pools.logging
+
+pool output_report(stats:map, anomalies:[WaterSample], thresholds:map) {
+    flow("=== Water Quality Analysis Report ===", current.console)
+    flow("Analyzed " + to_rivulet(stats.count) + " samples from " + to_rivulet(measure(stats.sites)) + " site(s).", current.console)
+    flow("Sites: " + join(stats.sites, ", "), current.console)
+    flow("", current.console)
+    flow("pH:     avg=" + to_rivulet(stats.avg_ph) + 
+         ", min=" + to_rivulet(stats.min_ph) +
+         ", max=" + to_rivulet(stats.max_ph) +
+         ", median=" + to_rivulet(stats.median_ph) +
+         ", stddev=" + to_rivulet(stats.stddev_ph), current.console)
+    flow("Turbidity: avg=" + to_rivulet(stats.avg_turbidity) + 
+         ", min=" + to_rivulet(stats.min_turbidity) +
+         ", max=" + to_rivulet(stats.max_turbidity) +
+         ", median=" + to_rivulet(stats.median_turbidity) +
+         ", stddev=" + to_rivulet(stats.stddev_turbidity), current.console)
+    flow("Temperature: avg=" + to_rivulet(stats.avg_temperature) + 
+         ", min=" + to_rivulet(stats.min_temperature) +
+         ", max=" + to_rivulet(stats.max_temperature) +
+         ", median=" + to_rivulet(stats.median_temperature) +
+         ", stddev=" + to_rivulet(stats.stddev_temperature), current.console)
+    flow("", current.console)
+    flow("Anomaly thresholds: ", current.console)
+    flow("  pH: " + to_rivulet(thresholds.ph_min) + "–" + to_rivulet(thresholds.ph_max), current.console)
+    flow("  Turbidity: <= " + to_rivulet(thresholds.turbidity_max), current.console)
+    flow("  Temperature: " + to_rivulet(thresholds.temp_min) + "–" + to_rivulet(thresholds.temp_max), current.console)
+    flow("", current.console)
+    flow("Detected anomalies: " + to_rivulet(measure(anomalies)), current.console)
+    if measure(anomalies) == 0 {
+        flow("  No anomalies detected.", current.console)
+    } else {
+        cycle through anomalies as a {
+            flow("  [Anomaly] " + a.timestamp + " | " + a.location +
+                 " | pH: " + to_rivulet(a.ph) + 
+                 ", Turbidity: " + to_rivulet(a.turbidity) + 
+                 ", Temp: " + to_rivulet(a.temperature), current.console)
+        }
+    }
+}
+
+pool write_csv_report(stats:map, anomalies:[WaterSample], out_path:rivulet) {
+    let header = "timestamp,location,ph,turbidity,temperature,anomaly\n"
+    let lines = [header]
+    cycle through anomalies as a {
+        let line = a.timestamp + "," + a.location + "," +
+                   to_rivulet(a.ph) + "," +
+                   to_rivulet(a.turbidity) + "," +
+                   to_rivulet(a.temperature) + ",yes\n"
+        lines = lines + [line]
+    }
+    let content = join(lines, "")
+    try channel {
+        draw from current.file.write(out_path, content)
+        draw from logging.info("Wrote anomaly report: " + out_path)
+    } catch turbulence as error {
+        draw from logging.error("Failed to write anomaly report: " + to_rivulet(error))
+    }
+}
